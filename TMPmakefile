@@ -1,0 +1,20 @@
+server: main.o network.o httpMessageConvert.o Cookie.o connectionhandler.o Clientthread.o
+	gcc main.o network.o httpMessageConvert.o Cookie.o connectionhandler.o Clientthread.o -o server
+
+main.o: main.c util.c util.h connectionhandler.o
+	gcc main.c util.c util.h connectionhandler.o -o main.o
+
+network.o: network.c network.h
+	gcc network.c network.h -o network.o
+
+httpMessageConvert.o: httpMessageConvert.c httpMessageConvert.h
+	gcc httpMessageConvert.c httpMessageConvert.h -o httpMessageConvert.o
+
+Cookie.o: Cookie.c Cookie.h	
+	gcc Cookie.c Cookie.h -o Cookie.o
+
+connectionhandler.o: connectionhandler.c connectionhandler.h 
+	gcc connectionhandler.c connectionhandler.o -lpthread -o connectionhandler.o
+
+Clientthread.o: Clientthread.c Clientthread.h	 
+	gcc Clientthread.c Clientthread.h -lpthread -o Clientthread.o

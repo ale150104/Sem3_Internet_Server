@@ -1,0 +1,2 @@
+server: main.c util.c network.c httpMessageConvert.c Cookie.c connectionhandler.c connectionhandler.h Clientthread.c Clientthread.h
+	gcc main.c util.c network.c httpMessageConvert.c Cookie.c connectionhandler.c connectionhandler.h Clientthread.c Clientthread.h -lpthread -o server
