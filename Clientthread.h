@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <stdbool.h>
 #include "Cookie.h"
+#include <pthread.h>
 
 
 void *clientthread(void *arg);

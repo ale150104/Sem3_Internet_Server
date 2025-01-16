@@ -70,10 +70,10 @@ void *clientthread(void *arg)
 		} 
 		infoPrint("Socket schließen hat funktioniert");
 
-		if(deleteUser(self->name) == -1){
-			errorPrint("User entfernen schief gelaufen");
-		} 
-		infoPrint("User entfernen hat geklappt!");
+		//if(deleteUser(self->name) == -1){
+		//	errorPrint("User entfernen schief gelaufen");
+		//} 
+		//infoPrint("User entfernen hat geklappt!");
 	}	
 	else 
 	{
@@ -84,7 +84,7 @@ void *clientthread(void *arg)
 		infoPrint("Socket schließen hat funktioniert");
 	} 
 
-	free(messageBuffer);
+	// free(messageBuffer);
 
 	infoPrint("Thread wird nun geschlossen");
 	
