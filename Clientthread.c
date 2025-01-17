@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
+#include "httpMessageConvert.h"
 
 
 //Static functions prototype declaration
@@ -23,12 +24,9 @@ void *clientthread(void *arg)
 
 	int sd = *((int *) arg);
 
-	bool isLoggedIn = false;
+	// bool isLoggedIn = false;
 
 	infoPrint("Client thread started.");
-
-
-	//TODO: Receive messages and send them to all users, skip self
 
 	HTTPREQUEST *httpReq = (HTTPREQUEST *) malloc(sizeof(HTTPREQUEST));
 	if(httpReq == NULL){
@@ -42,6 +40,55 @@ void *clientthread(void *arg)
 		int result = networkReceive(sd, messageBuffer);
 
 		if(result > 0) {
+			infoPrint("Ein HTTP-Request ist angekommen");
+
+			infoPrint("Raw HTTP-Nachricht:");
+			infoPrint("%s", messageBuffer);
+
+			if (strToHTTP(httpReq, messageBuffer) != 0)
+			{
+				errorPrint("Fehler aufgetreten beim Bauen der HTTP-Request intern");
+			} 
+
+			//See Which Resource was requested
+			if(compareStrings(httpReq->Method, "GET") == true)
+			{
+				infoPrint("Eine Resource wurde mit der GET-Methode angefragt");
+				if(compareStrings(httpReq->Url, "/website") == true)
+				{
+					infoPrint("Die Pseudo-Webseite wurde angefragt");
+					//...
+				}
+				
+				else if(compareStrings(httpReq->Url, "/pdf") == true)
+				{
+					infoPrint("Die Pseudo-PDF wurde angefragt");
+					//...
+				}
+
+				if(compareStrings(httpReq->Url, "/mixed") == true)
+				{
+					infoPrint("Die Pseudo-TEXT+BILD-Datei wurde angefragt");
+					//...
+				}
+
+				if(compareStrings(httpReq->Url, "/myname") == true)
+				{
+					infoPrint("Der aktuelle Name wurde angefragt");
+					//...
+				}
+			}
+
+			else if(compareStrings(httpReq->Method, "POST") == true) 
+			{
+				infoPrint("Eine Ressource wurde mit POST-Methode angefragt");
+				
+				if(compareStrings(httpReq->Url, "/myname") == true)
+				{
+					infoPrint("Die Namensänderung wurde angefragt");
+					//...
+				}
+			}   
 
 		}
 
@@ -63,26 +110,26 @@ void *clientthread(void *arg)
 
 
 
-	if(isLoggedIn == true)
-	{
-		if(close(self->sock) == -1){
-		errorPrint("Socket schließen hat nicht funktioniert!");
-		} 
-		infoPrint("Socket schließen hat funktioniert");
+	//if(isLoggedIn == true)
+	//{
+	//	if(close(self->sock) == -1){
+	//	errorPrint("Socket schließen hat nicht funktioniert!");
+	//	} 
+	//	infoPrint("Socket schließen hat funktioniert");
 
 		//if(deleteUser(self->name) == -1){
 		//	errorPrint("User entfernen schief gelaufen");
 		//} 
 		//infoPrint("User entfernen hat geklappt!");
-	}	
-	else 
-	{
+	//}	
+	//else 
+	//{
 		if(close(sd) == -1){
 
 		errorPrint("Socket schließen hat nicht funktioniert!");
 		} 
 		infoPrint("Socket schließen hat funktioniert");
-	} 
+	//} 
 
 	// free(messageBuffer);
 
