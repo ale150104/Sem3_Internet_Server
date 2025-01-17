@@ -7,15 +7,16 @@
  * login), replace this with message structures derived from the network
  * protocol (RFC) as found in the moodle course. */
 
-enum { MSG_MAX = 5242880 };
+//2MB max size
+enum { MSG_MAX = 2097152};
 
 
 
 typedef struct __attribute__((packed))
 {
-	char Method[4];
+	char Method[5];
 	char Url[512];
-	char Version[8];  
+	char Version[9];  
 	int contentLength;
 	char contentType[512];
 	char Host[512];
