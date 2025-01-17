@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 
 	//TODO: use port specified via command line
 	infoPrint("Übergebener Port %s", argv[1]);
-	in_port_t port = 80;
+	in_port_t port = 1025;
 	
 	if(argv[1] != NULL)
 	{
