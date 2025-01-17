@@ -11,7 +11,6 @@
 
 //Static function prototypes/variables declaration
 static bool checkDoubleNamings(const char *name);
-static bool compareStrings(const char *str1, const char *str2);
 static pthread_mutex_t InternCookieLock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t sessionLock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -186,7 +185,7 @@ static bool checkDoubleNamings(const char *name){
 }
 
 
-static bool compareStrings(const char *str1, const char *str2){
+bool compareStrings(const char *str1, const char *str2){
 
     int str1Length = strlen(str1);
 

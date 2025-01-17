@@ -36,6 +36,9 @@ int deleteInternCookie(char *name);
 void InternCookiesForEach(void *self, void (* func) (void *self, InternCookie *currentElement, void *somethingElse), void *someMoreArgument);
 
 
+
+
+bool compareStrings(const char *str1, const char *str2);
 //TODO: Add prototypes for functions that fulfill the following tasks:
 // * Add a new user to the list and start client thread
 // * Iterate over the complete list (to send messages to all users)
