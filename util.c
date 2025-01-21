@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -324,4 +325,14 @@ uint64_t hton64u(uint64_t host64u)
 		*--p = (host64u & ((uint64_t)0xffU << (i*8U))) >> (i*8U);
 
 	return conv.uint64;
+}
+
+double getTimeInSeconds()
+{
+	//Timestamp
+	struct timespec tv;
+	if(clock_gettime(CLOCK_REALTIME, &tv))
+		errnoPrint("Fehler beim Zeit auslesen");
+
+	return (double) tv.tv_sec;
 }

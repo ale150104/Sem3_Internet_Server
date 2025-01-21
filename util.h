@@ -43,6 +43,8 @@ size_t nameBytesValidate(const char *input, size_t n);
 uint64_t ntoh64u(uint64_t network64u);
 uint64_t hton64u(uint64_t host64u);
 
+double getTimeInSeconds();
+
 #ifdef __cplusplus
 }
 #endif
