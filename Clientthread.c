@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include "Clientthread.h"
 #include "Cookie.h"
 #include "util.h"
@@ -15,6 +14,12 @@
 
 
 static void arrayToNull(char *arr, int len);
+
+static int sendBadRequest();
+
+static int sendServerError();
+
+static int sendNotFound();
 
 
 void *clientthread(void *arg)
@@ -109,29 +114,12 @@ void *clientthread(void *arg)
 	}
 
 
+	if(close(sd) == -1){
 
-	//if(isLoggedIn == true)
-	//{
-	//	if(close(self->sock) == -1){
-	//	errorPrint("Socket schließen hat nicht funktioniert!");
-	//	} 
-	//	infoPrint("Socket schließen hat funktioniert");
+	errorPrint("Socket schließen hat nicht funktioniert!");
+	} 
+	infoPrint("Socket schließen hat funktioniert");
 
-		//if(deleteUser(self->name) == -1){
-		//	errorPrint("User entfernen schief gelaufen");
-		//} 
-		//infoPrint("User entfernen hat geklappt!");
-	//}	
-	//else 
-	//{
-		if(close(sd) == -1){
-
-		errorPrint("Socket schließen hat nicht funktioniert!");
-		} 
-		infoPrint("Socket schließen hat funktioniert");
-	//} 
-
-	// free(messageBuffer);
 
 	infoPrint("Thread wird nun geschlossen");
 	
@@ -143,13 +131,54 @@ void *clientthread(void *arg)
 }
 
 
-
-double getTimeInSeconds()
+static int sendServerError()
 {
-	//Timestamp
-	struct timespec tv;
-	if(clock_gettime(CLOCK_REALTIME, &tv))
-		errnoPrint("Fehler beim Zeit auslesen");
 
-	return (double) tv.tv_sec;
 } 
+
+static int sendBadRequest(char *text)
+{
+	HTTPRESPONSE *resp = (HTTPRESPONSE *) malloc(sizeof(HTTPRESPONSE));
+	if(resp == NULL)
+	{
+		errnoPrint("Beim Anlegen von HTTPRESPONSE-Speicher ist etwas schiefgelaufen");
+		return -1;
+	} 
+
+
+	strncpy(resp->Version,"HTTP/1.1", 8);
+	resp->Version[8] = 0;
+
+	strncpy(resp->Version,"400", 3);
+	resp->Version[3] = 0;
+
+	strncpy(resp->Version,text, strlen(text));
+	resp->Version[strlen(text)] = 0;
+
+	resp->contentLength = 0;
+
+	strncpy(resp->Connection,"close", 5);
+	resp->Version[5] = 0;
+
+	//DATE
+	//...
+
+	strncpy(resp->Server,"LAyerServer", 10);
+	resp->Version[10] = 0;
+
+	//convertToStr
+	//...
+
+	//Send
+	//...
+
+
+
+} 
+
+
+static int sendNotFound()
+{
+
+} 
+ 
