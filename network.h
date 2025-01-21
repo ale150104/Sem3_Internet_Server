@@ -21,9 +21,26 @@ typedef struct __attribute__((packed))
 	char contentType[512];
 	char Host[512];
 	char Referer[512];
-	char Connection[10];    
+	char Connection[10];
+	char Cookie[512]; 
+	char Body[MSG_MAX - 2584];     
 
 } HTTPREQUEST;
+
+typedef struct __attribute__((packed))
+{
+	char Version[9];  
+	char statusCode[4];
+	char statusNachricht[512];
+	int contentLength;
+	char contentType[512];
+	char Connection[10];
+	char Cookie[512]; 
+	char Server[512]; 
+	char Date[512]; 
+	char Body[MSG_MAX - 2071];     
+
+} HTTPRESPONSE;
 
 
 int networkReceive(int fd, char *buffer);
