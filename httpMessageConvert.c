@@ -2,18 +2,36 @@
 #include "network.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 
 static int getGeneralInfoAboutRequest(HTTPREQUEST *buffer, char *strBuf);
 
 static int getHeadersFromRequest(HTTPREQUEST *buffer, char *strBuf, int maxHeaders);
 
+
+static char *divideBodyFromHeader(char *str);
+
+
 int strToHTTP(HTTPREQUEST *buffer, char *strBuf)
 {
+
     //Returncodes
     getGeneralInfoAboutRequest(buffer, strBuf);
 
-    getHeadersFromRequest(buffer, strBuf, 7);
+    if(strcmp((buffer->Method), "GET") != 0)
+    {
+        infoPrint("Die Nachricht dürfte einen Body haben");
+        //TEMP 
+        char *body = divideBodyFromHeader(strBuf);
+        infoPrint("Der angegebene HEADER lautet: %s", strBuf);
+        
+        infoPrint("Der angegebene Body lautet: %s" ,body);
+        strcpy(buffer->Body, body);
+        buffer->Body[strlen(body)] = 0;  
+    } 
+
+    getHeadersFromRequest(buffer, strBuf, 15);
 
     return 0;
 
@@ -84,6 +102,11 @@ static int getHeadersFromRequest(HTTPREQUEST *buffer, char *strBuf, int maxHeade
 
         char *key = strtok(headerlines[i], ":");
 
+        if(key == NULL)
+        {
+            break;
+        } 
+
         char *value = strtok(NULL, "\r\n");
 
         infoPrint("Header-Schlüssel: %s", key);
@@ -97,38 +120,65 @@ static int getHeadersFromRequest(HTTPREQUEST *buffer, char *strBuf, int maxHeade
             buffer->contentLength = atoi(value);
         } 
 
-        if(compareStrings(key, "Content-Type") == true)
+        else if(compareStrings(key, "Content-Type") == true)
         {
             infoPrint("HEADER Content-Type vorhanden!");
             strncpy(buffer->contentType, value, 511);
             buffer->contentType[511] = 0; 
         } 
 
-        if(compareStrings(key, "Host") == true)
+        else if(compareStrings(key, "Host") == true)
         {
             infoPrint("HEADER Host vorhanden!");
             strncpy(buffer->Host, value, 511);
             buffer->Host[511] = 0; 
         } 
 
-        if(compareStrings(key, "Referer") == true)
+        else if(compareStrings(key, "Referer") == true)
         {
             infoPrint("HEADER Referer vorhanden!");
             strncpy(buffer->Referer, value, 511);
             buffer->Referer[511] = 0; 
         } 
 
-        if(compareStrings(key, "Connection") == true)
+        else if(compareStrings(key, "Connection") == true)
         {
             infoPrint("HEADER Connection vorhanden!");
             strncpy(buffer->Connection, value, 9);
             buffer->Connection[9] = 0; 
-        } 
+        }
+        
+        else if(compareStrings(key, "Cookie") == true)
+        {
+            infoPrint("HEADER Cookie vorhanden!");
+            strncpy(buffer->Cookie, value, 511);
+            buffer->Connection[511] = 0; 
+        }  
     }
 
 } 
 
 
+static char *divideBodyFromHeader(char *str)
+{
+    //...
+    bool bodyFound = false;
+    
+    for(int i = 0; i < strlen(str); i++)
+    {
+
+        if(*(str + i) == 13 && *(str + i + 1) == 10 && *(str + i + 2) == 13 && *(str + i + 3) == 10)
+        {
+            bodyFound = true;
+            *(str + i + 2) = 0;
+
+            return (str + i +  4);
+        } 
+    } 
+
+    return NULL;
+
+} 
 
 
 int HTTPTOstr(HTTPREQUEST *buffer, char *strBuf)
