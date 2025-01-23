@@ -7,7 +7,7 @@
 
 int strToHTTP(HTTPREQUEST *buffer, char *strBuf);
 
-int HTTPTOstr(HTTPREQUEST *buffer, char *strBuf);
+int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf);
 
 
 #endif

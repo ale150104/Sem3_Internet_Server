@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 
 static int getGeneralInfoAboutRequest(HTTPREQUEST *buffer, char *strBuf);
@@ -12,6 +13,9 @@ static int getHeadersFromRequest(HTTPREQUEST *buffer, char *strBuf, int maxHeade
 
 static char *divideBodyFromHeader(char *str);
 
+static char* buildStatusLine(HTTPRESPONSE *buffer, char *strBuf);
+
+static char* buildHeaderLines(HTTPRESPONSE *buffer, char* strBuf);
 
 int strToHTTP(HTTPREQUEST *buffer, char *strBuf)
 {
@@ -78,10 +82,7 @@ static int getHeadersFromRequest(HTTPREQUEST *buffer, char *strBuf, int maxHeade
 {
     char httpStr[MSG_MAX];
 
-    infoPrint("Array Anelgen hat geklappt");
     strcpy(httpStr, strBuf); 
-
-    infoPrint("Kopieren des Strings hat geklappt");
 
     char *headerlines[maxHeaders];
 
@@ -98,7 +99,7 @@ static int getHeadersFromRequest(HTTPREQUEST *buffer, char *strBuf, int maxHeade
 
     for(int i = 0; i < maxHeaders; i++)
     {
-        infoPrint("Die %d. Zeile: %s", i, headerlines[i] );
+        //infoPrint("Die %d. Zeile: %s", i, headerlines[i] );
 
         char *key = strtok(headerlines[i], ":");
 
@@ -109,48 +110,48 @@ static int getHeadersFromRequest(HTTPREQUEST *buffer, char *strBuf, int maxHeade
 
         char *value = strtok(NULL, "\r\n");
 
-        infoPrint("Header-Schlüssel: %s", key);
+        //infoPrint("Header-Schlüssel: %s", key);
 
-        infoPrint("Header-Wert: %s", value);
+        //infoPrint("Header-Wert: %s", value);
 
         if(compareStrings(key, "Content-Length") == true)
         {
-            infoPrint("HEADER Content-Length vorhanden!");
+            //infoPrint("HEADER Content-Length vorhanden!");
             //Umwandeln in int ...
             buffer->contentLength = atoi(value);
         } 
 
         else if(compareStrings(key, "Content-Type") == true)
         {
-            infoPrint("HEADER Content-Type vorhanden!");
+            //infoPrint("HEADER Content-Type vorhanden!");
             strncpy(buffer->contentType, value, 511);
             buffer->contentType[511] = 0; 
         } 
 
         else if(compareStrings(key, "Host") == true)
         {
-            infoPrint("HEADER Host vorhanden!");
+            //infoPrint("HEADER Host vorhanden!");
             strncpy(buffer->Host, value, 511);
             buffer->Host[511] = 0; 
         } 
 
         else if(compareStrings(key, "Referer") == true)
         {
-            infoPrint("HEADER Referer vorhanden!");
+            //infoPrint("HEADER Referer vorhanden!");
             strncpy(buffer->Referer, value, 511);
             buffer->Referer[511] = 0; 
         } 
 
         else if(compareStrings(key, "Connection") == true)
         {
-            infoPrint("HEADER Connection vorhanden!");
+            //infoPrint("HEADER Connection vorhanden!");
             strncpy(buffer->Connection, value, 9);
             buffer->Connection[9] = 0; 
         }
         
         else if(compareStrings(key, "Cookie") == true)
         {
-            infoPrint("HEADER Cookie vorhanden!");
+            //infoPrint("HEADER Cookie vorhanden!");
             strncpy(buffer->Cookie, value, 511);
             buffer->Connection[511] = 0; 
         }  
@@ -161,15 +162,12 @@ static int getHeadersFromRequest(HTTPREQUEST *buffer, char *strBuf, int maxHeade
 
 static char *divideBodyFromHeader(char *str)
 {
-    //...
-    bool bodyFound = false;
     
     for(int i = 0; i < strlen(str); i++)
     {
 
         if(*(str + i) == 13 && *(str + i + 1) == 10 && *(str + i + 2) == 13 && *(str + i + 3) == 10)
         {
-            bodyFound = true;
             *(str + i + 2) = 0;
 
             return (str + i +  4);
@@ -181,7 +179,108 @@ static char *divideBodyFromHeader(char *str)
 } 
 
 
-int HTTPTOstr(HTTPREQUEST *buffer, char *strBuf)
+int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf)
 {
+    char statusLine[512]; 
+
+    buildStatusLine(buffer, statusLine);
+
+    infoPrint("Deie Status-Line für die HTTP-Response: %s", statusLine);
+
+
+    char headers[1024]; 
+
+    buildHeaderLines(buffer, headers);
+
+    infoPrint("Die Header: \n%s", headers);
+
+    strncpy(strBuf, statusLine, strlen(statusLine));
+    strcat(strBuf, headers);
+
+    infoPrint("Die fertige Nachricht:\n%s", strBuf);
+
+    return 0;   
+    
+    //     char body[MSG_MAX - 512 - 1024];
 
 } 
+
+
+
+static char* buildStatusLine(HTTPRESPONSE *buffer, char *strBuf)
+{
+    strncpy(strBuf, buffer->Version, strlen(buffer->Version));
+    
+    strcat(strBuf, " ");
+
+    strcat(strBuf, buffer->statusCode);
+
+    strcat(strBuf, " ");
+
+    strcat(strBuf, buffer->statusNachricht);
+
+    strcat(strBuf, "\r\n");
+
+} 
+
+
+static char* buildHeaderLines(HTTPRESPONSE *buffer, char *strBuf)
+{
+    //-------------
+    strncpy(strBuf, "Content-Length: ", 16);
+
+
+    char lengthOfContent[7]; 
+    sprintf(lengthOfContent, "%d", buffer->contentLength);
+
+    strcat(strBuf, lengthOfContent);
+
+    strcat(strBuf, "\r\n");
+
+    //-----------
+
+    if(buffer->contentLength > 0)
+    {
+        strcat(strBuf, "Content-Type: ");
+
+        strcat(strBuf, buffer->contentType);
+
+        strcat((strBuf), "\r\n");
+    } 
+
+
+    //---------
+
+    strcat(strBuf, "Connection: ");
+
+    strcat(strBuf, buffer->Connection);
+
+    strcat(strBuf, "\r\n");
+
+    //----------------
+
+        // strcat(strBuf, "Set-Cookie: ");
+
+        // strcat(strBuf, buffer->Cookie);
+
+        // strcat(strBuf, "\r\n");
+
+    // ---------
+
+    strcat(strBuf, "Server: ");
+
+    strcat(strBuf, buffer->Server);
+
+    strcat(strBuf, "\r\n");
+
+    // ----
+
+    strcat(strBuf, "Date: ");
+
+    strcat(strBuf, buffer->Date);
+
+    strcat(strBuf, "\r\n");
+
+    strcat(strBuf, "\0");
+
+}
