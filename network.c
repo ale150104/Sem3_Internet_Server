@@ -37,15 +37,15 @@ int networkSend(int fd, const char *buffer)
 
 	// infoPrint("Länge der zu versendenden Nachricht: %d, Nachricht-Payload: %s", messageLength, buffer->body.serverToClient.Text);
 
-
-	// ssize_t writtenBytes = write(fd, buffer, 3 + messageLength);
+	infoPrint("Die Länge von \n%s \nist: %ld ", buffer, strlen(buffer));
+	ssize_t writtenBytes = write(fd, buffer, strlen(buffer));
 	
-	// infoPrint("Geschrieben Bytes: %ld", writtenBytes);
+	infoPrint("Geschrieben Bytes: %ld", writtenBytes);
 
-	// if(writtenBytes == -1){
-	//	errno = ENOSYS;
-	//	return -1;
-	// }
+	if(writtenBytes == -1){
+		errno = ENOSYS;
+		return -1;
+	}
 
 	return 0;
 
