@@ -21,6 +21,8 @@ static int sendServerError();
 
 static int sendNotFound();
 
+static void getTimeInPretty(char *_time);
+
 
 void *clientthread(void *arg)
 {
@@ -82,6 +84,11 @@ void *clientthread(void *arg)
 					infoPrint("Der aktuelle Name wurde angefragt");
 					//...
 				}
+
+				else{
+					sendBadRequest(sd);
+					break;
+				} 
 			}
 
 			else if(compareStrings(httpReq->Method, "POST") == true) 
@@ -136,7 +143,7 @@ static int sendServerError()
 
 } 
 
-static int sendBadRequest(char *text)
+static int sendBadRequest(int socket)
 {
 	HTTPRESPONSE *resp = (HTTPRESPONSE *) malloc(sizeof(HTTPRESPONSE));
 	if(resp == NULL)
@@ -146,33 +153,62 @@ static int sendBadRequest(char *text)
 	} 
 
 
-	strncpy(resp->Version,"HTTP/1.1", 8);
+	strncpy(resp->Version,"HTTP/1.1", 9);
 	resp->Version[8] = 0;
 
-	strncpy(resp->Version,"400", 3);
-	resp->Version[3] = 0;
+	infoPrint("Die Version: %s", resp->Version);
 
-	strncpy(resp->Version,text, strlen(text));
-	resp->Version[strlen(text)] = 0;
+	strncpy(resp->statusCode,"400", 4);
+	resp->statusCode[3] = 0;
+
+	infoPrint("Der Code: %s", resp->statusCode);
+
+	strncpy(resp->statusNachricht, "BadRequest", 11);
+	resp->statusNachricht[11] = 0;
+
+	infoPrint("Die Nachricht: %s", resp->statusNachricht);
 
 	resp->contentLength = 0;
 
 	strncpy(resp->Connection,"close", 5);
-	resp->Version[5] = 0;
+	resp->Connection[5] = 0;
 
 	//DATE
 	//...
+	char time[100];
+	getTimeInPretty(time);
+	strncpy(resp->Date, time, strlen(time));
+	resp->Date[strlen(time)] = 0; 
 
-	strncpy(resp->Server,"LAyerServer", 10);
-	resp->Version[10] = 0;
+
+	strncpy(resp->Server,"LAyerServer", 11);
+	resp->Server[11] = 0;
 
 	//convertToStr
 	//...
+	char respStr[MSG_MAX]; 
+
+	HTTPTOstr(resp, respStr);
 
 	//Send
 	//...
 
+	networkSend(socket, respStr);
 
+} 
+
+static void getTimeInPretty(char *_time)
+{
+	time_t t;
+
+    /* Retrieve the current time */
+    t = time(NULL);
+
+	size_t writtenChars = strftime(_time, 100, "%a, %d %b %Y %X %Z", localtime(&t));
+
+	*(_time + writtenChars + 1) = 0;
+
+	infoPrint("Aktuelle Zeit auf dem Server: %s", _time);
 
 } 
 
