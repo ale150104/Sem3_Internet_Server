@@ -45,6 +45,8 @@ uint64_t hton64u(uint64_t host64u);
 
 double getTimeInSeconds();
 
+void getTimeInPretty(char *_time);
+
 #ifdef __cplusplus
 }
 #endif

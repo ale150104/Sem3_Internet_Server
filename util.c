@@ -336,3 +336,19 @@ double getTimeInSeconds()
 
 	return (double) tv.tv_sec;
 }
+
+
+void getTimeInPretty(char *_time)
+{
+	time_t t;
+
+    /* Retrieve the current time */
+    t = time(NULL);
+
+	size_t writtenChars = strftime(_time, 100, "%a, %d %b %Y %X %Z", localtime(&t));
+
+	*(_time + writtenChars + 1) = 0;
+
+	infoPrint("Aktuelle Zeit auf dem Server: %s", _time);
+
+}
