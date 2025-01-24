@@ -182,7 +182,7 @@ static char *divideBodyFromHeader(char *str)
 } 
 
 
-int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf)
+long int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf)
 {
     cleanUpArray(strBuf, strlen(strBuf));
 
@@ -191,10 +191,10 @@ int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf)
 
     buildStatusLine(buffer, statusLine);
 
-    infoPrint("Deie Status-Line für die HTTP-Response: %s", statusLine);
+    infoPrint("Die Status-Line für die HTTP-Response: %s", statusLine);
 
 
-    char headers[1024]; 
+    char headers[1024];
     cleanUpArray(headers, 1024);
 
     buildHeaderLines(buffer, headers);
@@ -208,18 +208,13 @@ int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf)
     {
         strcat(strBuf, "\r\n");
 
-        char body[buffer->contentLength];
-        infoPrint("IN Body-Ptr steht: %s", buffer->Body);
-        
-        strcpy(body, (buffer->Body));
-
-        strcat(strBuf, body);
+        memmove((strBuf + strlen(strBuf)), buffer->Body, buffer->contentLength);
 
     } 
 
-    infoPrint("Die fertige Nachricht:\n%s", strBuf);
+    // infoPrint("Die fertige Nachricht:\n%s", strBuf);
 
-    return 0;   
+    return strlen(headers) + strlen(statusLine) + buffer->contentLength;   
     
     //     char body[MSG_MAX - 512 - 1024];
 
