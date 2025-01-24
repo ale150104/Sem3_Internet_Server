@@ -19,11 +19,11 @@ static void arrayToNull(char *arr, int len);
 
 static int sendErrorResponse(int socket, char *statusCode, char *statusText);
 
-static int sendSuccessResponse(int socket, int sizeOfBody, char *contentType, char *body);
+static int sendSuccessResponse(int socket, long int sizeOfBody, char *contentType, char *body);
 
 static int validateRequest(HTTPREQUEST *httpReq);
 
-static int copyFile(char *dest, char *fileName);
+static int copyFile(char *dest, char *fileName, long int bufferSize);
 
 
 void *clientthread(void *arg)
@@ -73,8 +73,28 @@ void *clientthread(void *arg)
 				infoPrint("Eine Resource wurde mit der GET-Methode angefragt");
 				if(compareStrings(httpReq->Url, "/website") == true)
 				{
-					infoPrint("Die Pseudo-Webseite wurde angefragt");
-					//...
+					long int sizeOfFile = findSize("assets/rwu.html");
+					if(sizeOfFile <= 0)
+					{
+						sendErrorResponse(sd, "500", "ServerError");
+						break;
+					} 
+
+					infoPrint("Size of file: %ld", sizeOfFile);
+
+					char body[sizeOfFile]; 
+
+					 int res = copyFile(body, "assets/rwu.html", sizeOfFile);
+
+					 if(res < 0)
+					 {
+						sendErrorResponse(sd, "500", "ServerError");
+					 } 
+
+					// infoPrint("in Body steht: %s", body);
+					
+					sendSuccessResponse(sd, sizeOfFile, "text/html", body);
+					break;
 				}
 				
 				else if(compareStrings(httpReq->Url, "/pdf") == true)
@@ -86,20 +106,19 @@ void *clientthread(void *arg)
 						break;
 					} 
 
+					infoPrint("Size of file: %ld", sizeOfFile);
+
 					char body[sizeOfFile]; 
 
-					int res = copyFile(body, "assets/spo.pdf");
+					 int res = copyFile(body, "assets/spo.pdf", sizeOfFile);
 
-					if(res < 0)
-					{
+					 if(res < 0)
+					 {
 						sendErrorResponse(sd, "500", "ServerError");
-						break;
-					} 
+					 } 
 
 					infoPrint("in Body steht: %s", body);
-
-					//send valid response
-					//...
+					
 					sendSuccessResponse(sd, sizeOfFile, "application/pdf", body);
 					break;
 
@@ -119,7 +138,7 @@ void *clientthread(void *arg)
 				}
 
 				else{
-					sendErrorResponse(sd, "404", "Not found");
+					sendErrorResponse(sd, "404", "Not Found");
 					break;
 				} 
 			}
@@ -135,7 +154,7 @@ void *clientthread(void *arg)
 				}
 				else
 				{
-					sendErrorResponse(sd, "404", "Not found");
+					sendErrorResponse(sd, "404", "Not Found");
 					break;
 				} 
 			}   
@@ -225,14 +244,14 @@ static int sendErrorResponse(int socket, char *statusCode, char *statusText)
 	//Send
 	//...
 
-	networkSend(socket, respStr);
+	networkSend(socket, respStr, strlen(respStr));
 
 } 
 
 
 
 
-static int sendSuccessResponse(int socket, int sizeOfBody, char *contentType, char *body)
+static int sendSuccessResponse(int socket, long int sizeOfBody, char *contentType, char *body)
 {
 	HTTPRESPONSE *resp = (HTTPRESPONSE *) malloc(sizeof(HTTPRESPONSE));
 	if(resp == NULL)
@@ -288,12 +307,12 @@ static int sendSuccessResponse(int socket, int sizeOfBody, char *contentType, ch
 	//...
 	char respStr[MSG_MAX]; 
 
-	HTTPTOstr(resp, respStr);
+	long int sizeOfStr = HTTPTOstr(resp, respStr);
 
 	//Send
 	//...
 
-	networkSend(socket, respStr);
+	networkSend(socket, respStr, sizeOfStr);
 
 } 
 
@@ -335,6 +354,8 @@ static int validateRequest(HTTPREQUEST *httpReq)
   
     // calculating the size of the file 
     long int res = ftell(fp); 
+
+	infoPrint("Größe der Datei: %ld", res);
   
     // closing the file 
     fclose(fp); 
@@ -345,7 +366,7 @@ static int validateRequest(HTTPREQUEST *httpReq)
 
 // -1 for error
 // 0 success
-static int copyFile(char *dest, char *fileName)
+static int copyFile(char *dest, char *fileName, long int bufferSize)
 {
 	FILE* fptr;
 	if ((fptr = fopen(fileName, "rb")) == NULL) 
@@ -360,14 +381,23 @@ static int copyFile(char *dest, char *fileName)
 	// else it will return a pointer 
 	// to the file.
 
-	size_t read = fread(dest, sizeof(dest), 1, fptr);
+	size_t read = fread(dest, 1, bufferSize, fptr);
 	infoPrint("Gelesene Bytes aus Datei: %ld", read);
 
-	infoPrint("BUffer enhält: %s", dest);
+	if(bufferSize != read)
+	{
+		return -1;
+	} 
+
+	//infoPrint("BUffer enhält: %s", );
 
 	fclose(fptr);
-	infoPrint("Die Pseudo-PDF wurde angefragt");
-	infoPrint("Größe des Bodys in Byte: %ld", sizeof(dest));
+	
+	
+	infoPrint("Größe des Bodys in Byte: %ld\n ", bufferSize);
+
+
+
 
 	return 0;
 
