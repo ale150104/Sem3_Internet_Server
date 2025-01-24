@@ -38,7 +38,7 @@ typedef struct __attribute__((packed))
 	char Cookie[512]; 
 	char Server[512]; 
 	char Date[512]; 
-	char Body[MSG_MAX - 2071];     
+	char *Body;     
 
 } HTTPRESPONSE;
 
