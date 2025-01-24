@@ -44,7 +44,7 @@ typedef struct __attribute__((packed))
 
 
 int networkReceive(int fd, char *buffer);
-int networkSend(int fd, const char *buffer);
+int networkSend(int fd, const char *buffer, long int size);
 
 
 #endif

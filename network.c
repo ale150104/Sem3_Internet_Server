@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include "Cookie.h"
+#include <stdio.h>
 
 //Return-value 1 : Recieving Message was ok
 //Return-value 0: Client closed Connection
@@ -30,15 +31,21 @@ int networkReceive(int fd, char *buffer)
 }
 
 
-int networkSend(int fd, const char *buffer)
+int networkSend(int fd, const char *buffer, long int size)
 {
+	// infoPrint("NetworksSend spuckt: \n ");
+	// 						// Temp
+	// for(int i = 0; i< size; i++)
+	// {
+	// 	fprintf(stdout, "%c", *(buffer + i));
+	// } 
 
 	// uint16_t messageLength = ntohs(buffer->length);
 
 	// infoPrint("Länge der zu versendenden Nachricht: %d, Nachricht-Payload: %s", messageLength, buffer->body.serverToClient.Text);
 
-	infoPrint("Die Länge von \n%s \nist: %ld ", buffer, strlen(buffer));
-	ssize_t writtenBytes = write(fd, buffer, strlen(buffer));
+	// infoPrint("Die Länge von \n%s \nist: %ld ", buffer, strlen(buffer));
+	ssize_t writtenBytes = write(fd, buffer, size);
 	
 	infoPrint("Geschrieben Bytes: %ld", writtenBytes);
 
