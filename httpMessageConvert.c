@@ -17,6 +17,9 @@ static char* buildStatusLine(HTTPRESPONSE *buffer, char *strBuf);
 
 static char* buildHeaderLines(HTTPRESPONSE *buffer, char* strBuf);
 
+static void cleanUpArray(char *strBuf, int length);
+
+
 int strToHTTP(HTTPREQUEST *buffer, char *strBuf)
 {
 
@@ -130,7 +133,7 @@ static int getHeadersFromRequest(HTTPREQUEST *buffer, char *strBuf, int maxHeade
 
         else if(compareStrings(key, "Host") == true)
         {
-            //infoPrint("HEADER Host vorhanden!");
+            infoPrint("HEADER Host vorhanden!");
             strncpy(buffer->Host, value, 511);
             buffer->Host[511] = 0; 
         } 
@@ -181,7 +184,10 @@ static char *divideBodyFromHeader(char *str)
 
 int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf)
 {
-    char statusLine[512]; 
+    cleanUpArray(strBuf, strlen(strBuf));
+
+    char statusLine[512];
+    cleanUpArray(statusLine, 512); 
 
     buildStatusLine(buffer, statusLine);
 
@@ -189,13 +195,27 @@ int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf)
 
 
     char headers[1024]; 
+    cleanUpArray(headers, 1024);
 
     buildHeaderLines(buffer, headers);
 
     infoPrint("Die Header: \n%s", headers);
 
-    strncpy(strBuf, statusLine, strlen(statusLine));
+    strcat(strBuf, statusLine);
     strcat(strBuf, headers);
+
+    if(buffer->contentLength > 0)
+    {
+        strcat(strBuf, "\r\n");
+
+        char body[buffer->contentLength];
+        infoPrint("IN Body-Ptr steht: %s", buffer->Body);
+        
+        strcpy(body, (buffer->Body));
+
+        strcat(strBuf, body);
+
+    } 
 
     infoPrint("Die fertige Nachricht:\n%s", strBuf);
 
@@ -209,7 +229,7 @@ int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf)
 
 static char* buildStatusLine(HTTPRESPONSE *buffer, char *strBuf)
 {
-    strncpy(strBuf, buffer->Version, strlen(buffer->Version));
+    strcat(strBuf, buffer->Version);
     
     strcat(strBuf, " ");
 
@@ -220,6 +240,8 @@ static char* buildStatusLine(HTTPRESPONSE *buffer, char *strBuf)
     strcat(strBuf, buffer->statusNachricht);
 
     strcat(strBuf, "\r\n");
+
+    strcat(strBuf, "\0");
 
 } 
 
@@ -284,3 +306,11 @@ static char* buildHeaderLines(HTTPRESPONSE *buffer, char *strBuf)
     strcat(strBuf, "\0");
 
 }
+
+static void cleanUpArray(char *strBuf, int length)
+{
+    for(int i = 0; i < length; i++)
+    {
+        *(strBuf + i) = 0;
+    } 
+} 
