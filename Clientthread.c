@@ -15,8 +15,6 @@
 
 static long int findSize(char file_name[]);
 
-static void arrayToNull(char *arr, int len);
-
 static int sendErrorResponse(int socket, char *statusCode, char *statusText);
 
 static int sendSuccessResponse(int socket, long int sizeOfBody, char *contentType, char *body, InternCookie *cookie);
@@ -173,9 +171,11 @@ void *clientthread(void *arg)
 
 					char body[100];
 					strncpy(body, "Name=", 6);
-					body[5] = 0; 
+					body[5] = 0;
 
 					strcat(body, self->name);
+
+					body[strlen(body)] = 0; 
 
 					infoPrint("Name of requesting client: %s", self->name);
 
@@ -278,6 +278,8 @@ static int sendErrorResponse(int socket, char *statusCode, char *statusText)
 
 	strncpy(resp->Connection,"close", 5);
 	resp->Connection[5] = 0;
+
+	cleanUpArray(resp->Cookie, 512);
 
 	//DATE
 	//...

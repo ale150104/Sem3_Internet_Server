@@ -17,7 +17,6 @@ static char* buildStatusLine(HTTPRESPONSE *buffer, char *strBuf);
 
 static char* buildHeaderLines(HTTPRESPONSE *buffer, char* strBuf);
 
-static void cleanUpArray(char *strBuf, int length);
 
 
 int strToHTTP(HTTPREQUEST *buffer, char *strBuf)
@@ -305,18 +304,21 @@ static char* buildHeaderLines(HTTPRESPONSE *buffer, char *strBuf)
 
     //-----------
 
+    if(strlen(buffer->Cookie) > 0)
+    {
 
-    strcat(strBuf, "Set-Cookie: Session=");
+        strcat(strBuf, "Set-Cookie: Session=");
 
-    strcat(strBuf, buffer->Cookie);
+        strcat(strBuf, buffer->Cookie);
 
-    strcat(strBuf, "\r\n");
+        strcat(strBuf, "\r\n");
+    } 
 
     strcat(strBuf, "\0");
 
 }
 
-static void cleanUpArray(char *strBuf, int length)
+void cleanUpArray(char *strBuf, int length)
 {
     for(int i = 0; i < length; i++)
     {

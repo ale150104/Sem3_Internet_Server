@@ -23,18 +23,18 @@ static int currentAvailableSessionID = 0;
 //Cookie anlegen
 InternCookie *createInternCookie(int _socket ,char *name){
 
-    pthread_mutex_lock(&InternCookieLock);
-    bool isThereAnEntryAlready = checkDoubleNamings(name);
-    pthread_mutex_unlock(&InternCookieLock);
-    infoPrint("Double Namings checked");
+    // pthread_mutex_lock(&InternCookieLock);
+    //bool isThereAnEntryAlready = checkDoubleNamings(name);
+    // pthread_mutex_unlock(&InternCookieLock);
+    // infoPrint("Double Namings checked");
 
-    if(isThereAnEntryAlready == true){
+    // if(isThereAnEntryAlready == true){
 
-        infoPrint("Ein Eintrag mit dem Namen %s existiert schon", name);
+    //     infoPrint("Ein Eintrag mit dem Namen %s existiert schon", name);
 
-        errno = EEXIST;
-        return NULL;
-    }
+    //     errno = EEXIST;
+    //     return NULL;
+    // }
 
     InternCookie *newEntry = (InternCookie *) malloc(sizeof(InternCookie));
     if(newEntry == NULL){
