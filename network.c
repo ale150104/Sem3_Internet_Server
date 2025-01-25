@@ -45,6 +45,8 @@ int networkSend(int fd, const char *buffer, long int size)
 	// infoPrint("Länge der zu versendenden Nachricht: %d, Nachricht-Payload: %s", messageLength, buffer->body.serverToClient.Text);
 
 	// infoPrint("Die Länge von \n%s \nist: %ld ", buffer, strlen(buffer));
+
+	infoPrint("Sendende Nachricht:\n %s", buffer);
 	ssize_t writtenBytes = write(fd, buffer, size);
 	
 	infoPrint("Geschrieben Bytes: %ld", writtenBytes);

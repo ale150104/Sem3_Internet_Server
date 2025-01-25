@@ -19,7 +19,7 @@ static void arrayToNull(char *arr, int len);
 
 static int sendErrorResponse(int socket, char *statusCode, char *statusText);
 
-static int sendSuccessResponse(int socket, long int sizeOfBody, char *contentType, char *body);
+static int sendSuccessResponse(int socket, long int sizeOfBody, char *contentType, char *body, InternCookie *cookie);
 
 static int validateRequest(HTTPREQUEST *httpReq);
 
@@ -30,6 +30,10 @@ void *clientthread(void *arg)
 {
 	InternCookie *self;
 	self = NULL;
+
+	bool wasCookieInHeader;
+	
+	wasCookieInHeader = false;
 
 	int sd = *((int *) arg);
 
@@ -65,7 +69,39 @@ void *clientthread(void *arg)
 			{
 				sendErrorResponse(sd, "400", "BadRequest");
 				break;
+			}
+
+
+			//Validate Cookie
+			if(httpReq->Cookie != NULL)
+			{
+				infoPrint("Ein Cookie wurde mitgeschickt");
+				 self = FindInternCookie(httpReq->Cookie);
+
+
+				if(self == NULL)
+				{
+					errnoPrint("Cookie nicht gefunden");
+					sendErrorResponse(sd, "400", "BadRequest");
+					break;
+				} 
+
+				wasCookieInHeader = true;
+
 			} 
+			else 
+			{
+				errorPrint("Kein Cookie wurde mitgeschickt");
+				self = createInternCookie(sd, "Unknown");
+				infoPrint("Angelegter Cookie mit Name: %s", self->name);
+				if(self == NULL)
+				{
+					errnoPrint("Beim Anlegen des Cookies ist etwas schief gelaufen");
+					sendErrorResponse(sd, "500", "Server Error");
+					break;
+				}  
+
+			} 	
 
 			//See Which Resource was requested
 			if(compareStrings(httpReq->Method, "GET") == true)
@@ -93,7 +129,7 @@ void *clientthread(void *arg)
 
 					// infoPrint("in Body steht: %s", body);
 					
-					sendSuccessResponse(sd, sizeOfFile, "text/html", body);
+					sendSuccessResponse(sd, sizeOfFile, "text/html", body, self);
 					break;
 				}
 				
@@ -119,7 +155,7 @@ void *clientthread(void *arg)
 
 					infoPrint("in Body steht: %s", body);
 					
-					sendSuccessResponse(sd, sizeOfFile, "application/pdf", body);
+					sendSuccessResponse(sd, sizeOfFile, "application/pdf", body, self);
 					break;
 
 
@@ -133,8 +169,20 @@ void *clientthread(void *arg)
 
 				else if(compareStrings(httpReq->Url, "/myname") == true)
 				{
-					infoPrint("Der aktuelle Name wurde angefragt");
-					//...
+					//if cookie exists
+
+					char body[100];
+					strncpy(body, "Name=", 6);
+					body[5] = 0; 
+
+					strcat(body, self->name);
+
+					infoPrint("Name of requesting client: %s", self->name);
+
+					infoPrint("Body: %s", body);
+					int bodyLength = strlen(body);
+					sendSuccessResponse(sd, bodyLength, "text/plain", body, self);
+					break;
 				}
 
 				else{
@@ -149,6 +197,14 @@ void *clientthread(void *arg)
 				
 				if(compareStrings(httpReq->Url, "/myname") == true)
 				{
+					if(wasCookieInHeader == false)
+					{
+						errnoPrint("Ohne Aktiven Cookie kein POST");
+						deleteInternCookie(self->name);
+						sendErrorResponse(sd, "400", "BadRequest");
+						break;
+					} 
+
 					infoPrint("Die Namensänderung wurde angefragt");
 					//...
 				}
@@ -251,7 +307,7 @@ static int sendErrorResponse(int socket, char *statusCode, char *statusText)
 
 
 
-static int sendSuccessResponse(int socket, long int sizeOfBody, char *contentType, char *body)
+static int sendSuccessResponse(int socket, long int sizeOfBody, char *contentType, char *body, InternCookie *cookie)
 {
 	HTTPRESPONSE *resp = (HTTPRESPONSE *) malloc(sizeof(HTTPRESPONSE));
 	if(resp == NULL)
@@ -287,6 +343,18 @@ static int sendSuccessResponse(int socket, long int sizeOfBody, char *contentTyp
 	} 
 
 	// TODO: Set-Cookie...
+	if(cookie != NULL)
+	{
+		char sessionId[10];
+		sprintf(sessionId, "%d", cookie->sessionId);
+
+		infoPrint("Die Session für den Cookie: %s", sessionId);
+
+		strncpy(resp->Cookie,sessionId, strlen(sessionId));
+		resp->Cookie[strlen(sessionId)] = 0;
+
+	} 
+
 
 	strncpy(resp->Connection,"close", 5);
 	resp->Connection[5] = 0;

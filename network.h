@@ -22,7 +22,7 @@ typedef struct __attribute__((packed))
 	char Host[512];
 	char Referer[512];
 	char Connection[10];
-	char Cookie[512]; 
+	char *Cookie; 
 	char Body[MSG_MAX - 2584];     
 
 } HTTPREQUEST;

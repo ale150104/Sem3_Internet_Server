@@ -155,8 +155,13 @@ static int getHeadersFromRequest(HTTPREQUEST *buffer, char *strBuf, int maxHeade
         else if(compareStrings(key, "Cookie") == true)
         {
             //infoPrint("HEADER Cookie vorhanden!");
-            strncpy(buffer->Cookie, value, 511);
-            buffer->Connection[511] = 0; 
+            char *val = strtok(value, "=");
+
+            val = strtok(NULL, ";");
+
+            infoPrint("Mitgesendeter Cookie: %s", val);
+
+            buffer->Cookie = val;
         }  
     }
 
@@ -295,6 +300,15 @@ static char* buildHeaderLines(HTTPRESPONSE *buffer, char *strBuf)
     strcat(strBuf, "Date: ");
 
     strcat(strBuf, buffer->Date);
+
+    strcat(strBuf, "\r\n");
+
+    //-----------
+
+
+    strcat(strBuf, "Set-Cookie: Session=");
+
+    strcat(strBuf, buffer->Cookie);
 
     strcat(strBuf, "\r\n");
 

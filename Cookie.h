@@ -33,7 +33,7 @@ InternCookie *createInternCookie(int _socket ,char *name);
 
 int deleteInternCookie(char *name);
 
-void InternCookiesForEach(void *self, void (* func) (void *self, InternCookie *currentElement, void *somethingElse), void *someMoreArgument);
+InternCookie *FindInternCookie(char *str);
 
 
 

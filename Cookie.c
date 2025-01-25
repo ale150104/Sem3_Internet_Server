@@ -51,8 +51,8 @@ InternCookie *createInternCookie(int _socket ,char *name){
 
     //Werte eintragen in InternCookie struct
 
-    strncpy(newEntry->name, "Anonym", 6);
-    newEntry->name[6] = 0;
+    strncpy(newEntry->name, name, strlen(name));
+    newEntry->name[strlen(name)] = 0;
 
     newEntry->ablaufDatum = getTimeInSeconds();
 
@@ -144,23 +144,33 @@ int deleteInternCookie(char *name){
 
 
 //Über Liste iterieren
-void InternCookiesForEach(void *self, void (* func) (void *self, InternCookie *currentElement, void *somethingElse), void *someMoreArgument){
+InternCookie *FindInternCookie(char *str){
     pthread_mutex_lock(&InternCookieLock);
 
     InternCookie *Element = InternCookieFront;
 
-    int i = 0;
-
     while(Element != NULL){
 
         InternCookie *nextElement = Element->next;
-        func(self, Element, someMoreArgument);
-        Element = nextElement;
+        
+        char strID[10];
+        sprintf(strID, "%d", Element->sessionId); 
 
-        i++;
+        infoPrint("Vergleich zwischen: %s und %s", strID, str);
+        if(strcmp(strID, str) == 0)
+        { 
+
+            pthread_mutex_unlock(&InternCookieLock);
+
+            return Element;
+
+        } 
+        Element = nextElement;
     }
 
     pthread_mutex_unlock(&InternCookieLock);
+
+    return NULL;
 } 
 
 
