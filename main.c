@@ -7,12 +7,10 @@ int main(int argc, char **argv)
 {
 
 	utilInit(argv[0]);
-	infoPrint("HTTP server, group LAyer");	//TODO: Add your group number!
+	infoPrint("HTTP server, group LAyer");
 
-	//TODO: evaluate command line arguments
-	//TODO: perform initialization
 
-	//TODO: use port specified via command line
+	// use port specified via command line if specified
 	infoPrint("Übergebener Port %s", argv[1]);
 	in_port_t port = 1025;
 	
