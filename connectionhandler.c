@@ -59,11 +59,9 @@ int connectionHandler(in_port_t port)
 
 		normalPrint("Neuer Socket für Client-Verbindung hergestellt");
 
-	    //TODO: add connection to user list and start client thread
+  
 
-		// infoPrint("Client mit Name %d meldet sich an", usr);   
-
-		//New Thread for Client;
+		//New Thread for Client Request
 		pthread_t clientThread;
 		int result = pthread_create(&clientThread, NULL, clientthread, &sd);
 		if(result != 0){
