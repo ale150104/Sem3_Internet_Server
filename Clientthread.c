@@ -13,34 +13,34 @@
 
 //Static functions prototype declaration
 
-static long int findSize(char file_name[]);
-
 static int sendErrorResponse(int socket, char *statusCode, char *statusText);
 
 static int sendSuccessResponse(int socket, long int sizeOfBody, char *contentType, char *body, InternCookie *cookie);
 
 static int validateRequest(HTTPREQUEST *httpReq);
 
-static int copyFile(char *dest, char *fileName, long int bufferSize);
-
 static long int createMixedResponse(char *strBuf, long int sizeOfStrBuf, char *text, char *boundary);
 
 
 void *clientthread(void *arg)
 {
+	//Intern struct for managing Cookie-Session
 	InternCookie *self;
 	self = NULL;
 
+	//Important for Checking if Client wants to change his name eventhough he haven't had a Cookie when requesting
 	bool wasCookieInHeader;
 	
 	wasCookieInHeader = false;
 
+	// Socket Descriptor
 	int sd = *((int *) arg);
 
 	// bool isLoggedIn = false;
 
 	infoPrint("Client thread started.");
 
+	// Internal struct for having Informations about Request in a clean struct
 	HTTPREQUEST *httpReq = (HTTPREQUEST *) malloc(sizeof(HTTPREQUEST));
 	if(httpReq == NULL){
 		errno = ENOMEM;
@@ -58,21 +58,24 @@ void *clientthread(void *arg)
 			infoPrint("Raw HTTP-Nachricht:");
 			infoPrint("%s", messageBuffer);
 
+			// Converting the HTTP-Request (Just a stream of Characters into the struct)
 			if (strToHTTP(httpReq, messageBuffer) != 0)
 			{
 				errorPrint("Fehler aufgetreten beim Bauen der HTTP-Request intern");
 			}
 
+			// Validate that the right Host is requested and that Client knows about Server just offering Connection-Type 'close'
 			int validation = validateRequest(httpReq); 
 
 			if(validation != 0)
 			{
-				sendErrorResponse(sd, "400", "BadRequest");
+				sendErrorResponse(sd, "400", "Bad Request");
 				break;
 			}
 
 
 			//Validate Cookie
+			// If an non existing Cookie is sent by Client, Server sends Error back to Client
 			if(httpReq->Cookie != NULL)
 			{
 				infoPrint("Ein Cookie wurde mitgeschickt");
@@ -82,7 +85,7 @@ void *clientthread(void *arg)
 				if(self == NULL)
 				{
 					errnoPrint("Cookie nicht gefunden");
-					sendErrorResponse(sd, "400", "BadRequest");
+					sendErrorResponse(sd, "400", "Bad Request");
 					break;
 				} 
 
@@ -97,22 +100,26 @@ void *clientthread(void *arg)
 				if(self == NULL)
 				{
 					errnoPrint("Beim Anlegen des Cookies ist etwas schief gelaufen");
-					sendErrorResponse(sd, "500", "Server Error");
+					sendErrorResponse(sd, "500", "Internal Server Error");
 					break;
 				}  
 
 			} 	
 
 			//See Which Resource was requested
+			
 			if(compareStrings(httpReq->Method, "GET") == true)
 			{
 				infoPrint("Eine Resource wurde mit der GET-Methode angefragt");
+
+				//Website was requested
+				//Internal Server Error when having I/O issues, else sending Success Response with Payload
 				if(compareStrings(httpReq->Url, "/website") == true)
 				{
 					long int sizeOfFile = findSize("assets/rwu.html");
 					if(sizeOfFile <= 0)
 					{
-						sendErrorResponse(sd, "500", "ServerError");
+						sendErrorResponse(sd, "500", "Internal Server Error");
 						break;
 					} 
 
@@ -126,21 +133,21 @@ void *clientthread(void *arg)
 
 					 if(res < 0)
 					 {
-						sendErrorResponse(sd, "500", "ServerError");
+						sendErrorResponse(sd, "500", "Internal Server Error");
 					 } 
-
-					// infoPrint("in Body steht: %s", body);
 					
 					sendSuccessResponse(sd, sizeOfFile, "text/html", body, self);
 					break;
 				}
 				
+				//PDF was requested
+				//Internal Server Error when having I/O issues, else sending Success Response with Payload
 				else if(compareStrings(httpReq->Url, "/pdf") == true)
 				{
 					long int sizeOfFile = findSize("assets/spo.pdf");
 					if(sizeOfFile <= 0)
 					{
-						sendErrorResponse(sd, "500", "ServerError");
+						sendErrorResponse(sd, "500", "Internal Server Error");
 						break;
 					} 
 
@@ -152,7 +159,7 @@ void *clientthread(void *arg)
 
 					 if(res < 0)
 					 {
-						sendErrorResponse(sd, "500", "ServerError");
+						sendErrorResponse(sd, "500", "Internal Server Error");
 					 } 
 
 					infoPrint("in Body steht: %s", body);
@@ -163,19 +170,28 @@ void *clientthread(void *arg)
 
 				}
 
+				//Multipart was requested
+				//Internal Server Error when having I/O issues or during construction of body, else sending Success Response with Payload
 				else if(compareStrings(httpReq->Url, "/mixed") == true)
 				{
 					infoPrint("Die Pseudo-TEXT+BILD-Datei wurde angefragt");
 					
 					char body[2095000];
-	
- 
 
 					long int size = createMixedResponse(body, 2095000, "Das ist das wunderschöne H-Gebäude", "--------------------------104850386028541947603269");
 
-					sendErrorResponse("sd", "400", "Bad");
+					if(size < 0)
+					{
+						sendErrorResponse(sd, "500", "Internal Server Error");
+						break;
+					} 
+
+					sendSuccessResponse(sd, size, "multipart/form-data; boundary=--------------------------104850386028541947603269", body, self);
+					break;
 				}
 
+				//Username for Cookie-Session was requested
+				//Internal Server Error when having I/O issues, else sending Success Response with Payload
 				else if(compareStrings(httpReq->Url, "/myname") == true)
 				{
 
@@ -201,6 +217,8 @@ void *clientthread(void *arg)
 				} 
 			}
 
+			//Changing Name was requested
+			//Internal Server Error when having Permission issues, else sending Success Response with New name
 			else if(compareStrings(httpReq->Method, "POST") == true) 
 			{
 				infoPrint("Eine Ressource wurde mit POST-Methode angefragt");
@@ -211,7 +229,7 @@ void *clientthread(void *arg)
 					{
 						errnoPrint("Ohne Aktiven Cookie kein POST");
 						deleteInternCookie(self->name);
-						sendErrorResponse(sd, "400", "BadRequest");
+						sendErrorResponse(sd, "400", "Bad Request");
 						break;
 					} 
 
@@ -260,7 +278,7 @@ void *clientthread(void *arg)
 		else {
 			
 			errnoPrint("Beim Lesen einer Nachricht ist etwas schief gelaufen");
-			sendErrorResponse(sd, "500", "ServerError");
+			sendErrorResponse(sd, "500", "Internal Server Error");
 			break;
 
 		}
@@ -268,6 +286,7 @@ void *clientthread(void *arg)
 	}
 
 
+	// Cleanup when Closing Connection to Client
 	if(close(sd) == -1){
 
 	errorPrint("Socket schließen hat nicht funktioniert!");
@@ -282,6 +301,7 @@ void *clientthread(void *arg)
 
 
 
+// HTTP-Error-Response to Client
 static int sendErrorResponse(int socket, char *statusCode, char *statusText)
 {
 	HTTPRESPONSE *resp = (HTTPRESPONSE *) malloc(sizeof(HTTPRESPONSE));
@@ -297,43 +317,42 @@ static int sendErrorResponse(int socket, char *statusCode, char *statusText)
 
 	infoPrint("Die Version: %s", resp->Version);
 
+	//The StatusCode for the Request which ended up with issues
 	strncpy(resp->statusCode,statusCode, 4);
 	resp->statusCode[3] = 0;
 
 	infoPrint("Der Code: %s", resp->statusCode);
 
+	// The Corresponding Status Message for the StatusCode
 	strncpy(resp->statusNachricht, statusText, strlen(statusText));
-	resp->statusNachricht[10] = 0;
+	resp->statusNachricht[strlen(statusText)] = 0;
 
 	infoPrint("Die Nachricht: %s", resp->statusNachricht);
 
+	// No Body being sent to Client when having an Error
 	resp->contentLength = 0;
 
+	// Signaling Client that Connection is going to be closed after the Server did send the response
 	strncpy(resp->Connection,"close", 5);
 	resp->Connection[5] = 0;
 
 	cleanUpArray(resp->Cookie, 512);
 
-	//DATE
-	//...
+	//DATE-Field in Header for the Response
 	char time[100];
 	getTimeInPretty(time);
 	strncpy(resp->Date, time, strlen(time));
 	resp->Date[strlen(time)] = 0; 
-	infoPrint("Länge des Datums: %ld", strlen(time));
 
 
+	//Server-Field for the Response
 	strncpy(resp->Server,"LAyerServer", 11);
 	resp->Server[11] = 0;
 
-	//convertToStr
-	//...
 	char respStr[MSG_MAX]; 
 
+	//Converting internal Response-Struct to appropriate HTTP-Message for Sending to Client
 	HTTPTOstr(resp, respStr);
-
-	//Send
-	//...
 
 	networkSend(socket, respStr, strlen(respStr));
 
@@ -357,31 +376,35 @@ static int sendSuccessResponse(int socket, long int sizeOfBody, char *contentTyp
 
 	infoPrint("Die Version: %s", resp->Version);
 
+	//Status Code for showing to Client that all went Ok
 	strncpy(resp->statusCode, "200", 4);
 	resp->statusCode[3] = 0;
 
 	infoPrint("Der Code: %s", resp->statusCode);
 
+	// The Corresponding Status Message for the StatusCode
 	strncpy(resp->statusNachricht, "Ok", 3);
 	resp->statusNachricht[2] = 0;
 
 	infoPrint("Die Nachricht: %s", resp->statusNachricht);
 
+	//Length of the Body being sent to the Client with Payload (If Body present)
 	resp->contentLength = sizeOfBody;
 
+	// Adding Information about the Content-Type of the Body, if there is one
 	if(sizeOfBody > 0)
 	{
 		strncpy(resp->contentType, contentType, strlen(contentType));
 		resp->contentType[strlen(contentType)] = 0;
 
 		memmove(resp->Body, body, sizeOfBody);
-		//resp->Body = body;
 	} 
 
-	// TODO: Set-Cookie...
+	// Information about the Cookie for the Client
 	if(cookie != NULL)
 	{
 		char sessionId[10];
+
 		sprintf(sessionId, "%d", cookie->sessionId);
 
 		infoPrint("Die Session für den Cookie: %s", sessionId);
@@ -392,11 +415,12 @@ static int sendSuccessResponse(int socket, long int sizeOfBody, char *contentTyp
 	} 
 
 
+	// Signaling Client that Connection is going to be closed after the Server did send the response
 	strncpy(resp->Connection,"close", 5);
 	resp->Connection[5] = 0;
 
-	//DATE
-	//...
+	
+	//DATE-Field in Header for the Response
 	char time[100];
 	getTimeInPretty(time);
 	strncpy(resp->Date, time, strlen(time));
@@ -404,17 +428,14 @@ static int sendSuccessResponse(int socket, long int sizeOfBody, char *contentTyp
 	infoPrint("Länge des Datums: %ld", strlen(time));
 
 
+
+	//Server-Field for the Response
 	strncpy(resp->Server,"LAyerServer", 11);
 	resp->Server[11] = 0;
 
-	//convertToStr
-	//...
 	char respStr[MSG_MAX]; 
 
 	long int sizeOfStr = HTTPTOstr(resp, respStr);
-
-	//Send
-	//...
 
 	networkSend(socket, respStr, sizeOfStr);
 
@@ -443,90 +464,45 @@ static int validateRequest(HTTPREQUEST *httpReq)
 	return 0; 
 } 
  
- static long int findSize(char file_name[]) 
-{ 
-    // opening the file in read mode 
-    FILE* fp = fopen(file_name, "r"); 
-  
-    // checking if the file exist or not 
-    if (fp == NULL) { 
-        printf("File Not Found!\n"); 
-        return -1; 
-    } 
-  
-    fseek(fp, 0L, SEEK_END); 
-  
-    // calculating the size of the file 
-    long int res = ftell(fp); 
-
-	infoPrint("Größe der Datei: %ld", res);
-  
-    // closing the file 
-    fclose(fp); 
-  
-    return res; 
-} 
-
-
-// -1 for error
-// 0 success
-static int copyFile(char *dest, char *fileName, long int bufferSize)
-{
-	FILE* fptr;
-	if ((fptr = fopen(fileName, "rb")) == NULL) 
-	{
-		printf("Error! opening file");
-			
-		// If file pointer will return NULL
-		// Program will exit.
-		return -1;
-	}
-		
-	// else it will return a pointer 
-	// to the file.
-
-	size_t read = fread(dest, 1, bufferSize, fptr);
-	infoPrint("Gelesene Bytes aus Datei: %ld", read);
-
-	if(bufferSize != read)
-	{
-		return -1;
-	} 
-
-	//infoPrint("BUffer enhält: %s", );
-
-	fclose(fptr);
-	
-	
-	infoPrint("Größe des Bodys in Byte: %ld\n ", bufferSize);
-
-
-
-
-	return 0;
-
-} 
-
-
-
 
 static long int createMixedResponse(char *strBuf, long int sizeOfStrBuf, char *text, char *boundary)
 {
 
+	cleanUpArray(strBuf, sizeOfStrBuf);
+
+	long int sizeOfBody;
+	sizeOfBody = 0;
+
+	infoPrint("Wert von SizeOfBody: %ld", sizeOfBody);
+
+	// Starting Boundary
 	strcat(strBuf, boundary);
+	sizeOfBody+= strlen(boundary);
+
 	strcat(strBuf, "\r\n");
-	strcat(strBuf, 'Content-Disposition: form-data; name="Description_Text"\r\n');
+	sizeOfBody += 2;
+
+	strcat(strBuf, "Content-Disposition: form-data; name=""Description_Text""\r\n");
+	sizeOfBody += 59;
 
 	strcat(strBuf, text);
+	sizeOfBody += strlen(text);
 
-	strcat(strBuf, boundary);
 	strcat(strBuf, "\r\n");
+	sizeOfBody += 2;
 
-	char temp1[100];
-	strcpy(temp1, (char *)'Content-Disposition: form-data; name= "Picture1"; filename="pic.webp"\r\n'); 
-	strcat(strBuf, temp1);
+	// Splitting Boundary from first Content Block
+	strcat(strBuf, boundary);
+	sizeOfBody+= strlen(boundary);
 
-	strcat(strBuf, "Content-Type: image/webp");
+	strcat(strBuf, "\r\n");
+	sizeOfBody += 2;
+
+	strcat(strBuf, "Content-Disposition: form-data; name= ""Picture1""; filename=""pic.webp""\r\n"); 
+	sizeOfBody +=75;
+
+	strcat(strBuf, "Content-Type: image/webp; charset=utf-8\r\n\r\n");
+	sizeOfBody += 43;
 
 
 	//...
@@ -536,25 +512,30 @@ static long int createMixedResponse(char *strBuf, long int sizeOfStrBuf, char *t
 		return -1;
 	} 
 
-	infoPrint("Size of file: %ld", sizeOfFile);
-
 	char img[sizeOfFile]; 
 
 	int res = copyFile(img, "assets/H_Gebaeude.webp", sizeOfFile);
 
-	if(res < sizeOfFile)
+	if(res < 0)
 	{
 		return -1;
 	} 
 
+	sizeOfBody += sizeOfFile;
+
 	memmove((strBuf + strlen(strBuf)), img, sizeOfFile);
 
-
-
+	strcat(strBuf, "\r\n");
+	sizeOfBody += 2;
+	
+	// Splitting Boundary from second and last Content Block
 	strcat(strBuf, boundary);
+	sizeOfBody+= strlen(boundary);
 
-	infoPrint("Die berechnete Länge von diesem Body ist: %ld", strlen(strBuf));
+	infoPrint("Die berechnete Länge von diesem Body ist: %ld", sizeOfBody);
 
 	infoPrint("Der Body: %s", strBuf);
+
+	return sizeOfBody;
 
 } 
