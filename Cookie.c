@@ -23,18 +23,6 @@ static int currentAvailableSessionID = 0;
 //Cookie anlegen
 InternCookie *createInternCookie(int _socket ,char *name){
 
-    // pthread_mutex_lock(&InternCookieLock);
-    //bool isThereAnEntryAlready = checkDoubleNamings(name);
-    // pthread_mutex_unlock(&InternCookieLock);
-    // infoPrint("Double Namings checked");
-
-    // if(isThereAnEntryAlready == true){
-
-    //     infoPrint("Ein Eintrag mit dem Namen %s existiert schon", name);
-
-    //     errno = EEXIST;
-    //     return NULL;
-    // }
 
     InternCookie *newEntry = (InternCookie *) malloc(sizeof(InternCookie));
     if(newEntry == NULL){
@@ -143,7 +131,6 @@ int deleteInternCookie(char *name){
 } 
 
 
-//Über Liste iterieren
 InternCookie *FindInternCookie(char *str){
     pthread_mutex_lock(&InternCookieLock);
 
@@ -194,23 +181,3 @@ static bool checkDoubleNamings(const char *name){
 
 }
 
-
-bool compareStrings(const char *str1, const char *str2){
-
-    int str1Length = strlen(str1);
-
-    int str2Length = strlen(str2);
-
-    if(str2Length != str1Length){
-        return false;
-    }
-
-    for(int i = 0; i < str1Length; i++){
-        if((*(str1 + i)) != (*(str2 + i))){
-            return false;
-        }
-    }
-
-    return true;
-
-}
