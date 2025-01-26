@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include "util.h"
+#include "stdbool.h"
 
 typedef enum
 {
@@ -352,3 +353,101 @@ void getTimeInPretty(char *_time)
 	infoPrint("Aktuelle Zeit auf dem Server: %s", _time);
 
 }
+
+
+
+long int findSize(char file_name[]) 
+{ 
+    // opening the file in read mode 
+    FILE* fp = fopen(file_name, "r"); 
+  
+    // checking if the file exist or not 
+    if (fp == NULL) { 
+        printf("File Not Found!\n"); 
+        return -1; 
+    } 
+  
+    fseek(fp, 0L, SEEK_END); 
+  
+    // calculating the size of the file 
+    long int res = ftell(fp); 
+
+	infoPrint("Größe der Datei: %ld", res);
+  
+    // closing the file 
+    fclose(fp); 
+  
+    return res; 
+} 
+
+
+// -1 for error
+// 0 success
+int copyFile(char *dest, char *fileName, long int bufferSize)
+{
+	FILE* fptr;
+	if ((fptr = fopen(fileName, "rb")) == NULL) 
+	{
+		printf("Error! opening file");
+			
+		// If file pointer will return NULL
+		// Program will exit.
+		return -1;
+	}
+		
+	// else it will return a pointer 
+	// to the file.
+
+	size_t read = fread(dest, 1, bufferSize, fptr);
+	infoPrint("Gelesene Bytes aus Datei: %ld", read);
+
+	if(bufferSize != read)
+	{
+		return -1;
+	} 
+
+	//infoPrint("BUffer enhält: %s", );
+
+	fclose(fptr);
+	
+	
+	infoPrint("Größe des Bodys in Byte: %ld\n ", bufferSize);
+
+
+
+
+	return 0;
+
+} 
+
+
+
+bool compareStrings(const char *str1, const char *str2){
+
+    int str1Length = strlen(str1);
+
+    int str2Length = strlen(str2);
+
+    if(str2Length != str1Length){
+        return false;
+    }
+
+    for(int i = 0; i < str1Length; i++){
+        if((*(str1 + i)) != (*(str2 + i))){
+            return false;
+        }
+    }
+
+    return true;
+
+}
+
+
+void cleanUpArray(char *strBuf, int length)
+{
+    for(int i = 0; i < length; i++)
+    {
+        *(strBuf + i) = 0;
+    } 
+} 
+

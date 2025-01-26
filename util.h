@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 /* For checking the parameters of printf-like functions, we use
  * GCC's __attribute__ language extension. Define __attribute__ as an empty
@@ -46,6 +47,14 @@ uint64_t hton64u(uint64_t host64u);
 double getTimeInSeconds();
 
 void getTimeInPretty(char *_time);
+
+long int findSize(char file_name[]);
+
+int copyFile(char *dest, char *fileName, long int bufferSize);
+
+bool compareStrings(const char *str1, const char *str2);
+
+void cleanUpArray(char *strBuf, int length);
 
 #ifdef __cplusplus
 }
