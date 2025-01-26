@@ -23,6 +23,8 @@ static int validateRequest(HTTPREQUEST *httpReq);
 
 static int copyFile(char *dest, char *fileName, long int bufferSize);
 
+static long int createMixedResponse(char *strBuf, long int sizeOfStrBuf, char *text, char *boundary);
+
 
 void *clientthread(void *arg)
 {
@@ -120,6 +122,8 @@ void *clientthread(void *arg)
 
 					 int res = copyFile(body, "assets/rwu.html", sizeOfFile);
 
+					 body[sizeOfFile] = 0; 
+
 					 if(res < 0)
 					 {
 						sendErrorResponse(sd, "500", "ServerError");
@@ -162,12 +166,18 @@ void *clientthread(void *arg)
 				else if(compareStrings(httpReq->Url, "/mixed") == true)
 				{
 					infoPrint("Die Pseudo-TEXT+BILD-Datei wurde angefragt");
-					//...
+					
+					char body[2095000];
+	
+ 
+
+					long int size = createMixedResponse(body, 2095000, "Das ist das wunderschöne H-Gebäude", "--------------------------104850386028541947603269");
+
+					sendErrorResponse("sd", "400", "Bad");
 				}
 
 				else if(compareStrings(httpReq->Url, "/myname") == true)
 				{
-					//if cookie exists
 
 					char body[100];
 					strncpy(body, "Name=", 6);
@@ -206,7 +216,30 @@ void *clientthread(void *arg)
 					} 
 
 					infoPrint("Die Namensänderung wurde angefragt");
-					//...
+
+					char *name = strtok(httpReq->Body, "=");
+					name = strtok(NULL, ";");
+					infoPrint("Der Neue Name des Clients soll sein: %s", name);
+
+					strncpy(self->name, name, strlen(name));
+					self->name[strlen(name)] = 0;
+
+					
+					char body[100];
+					strncpy(body, "Name=", 6);
+					body[5] = 0;
+
+					strcat(body, self->name);
+
+					body[strlen(body)] = 0; 
+
+					infoPrint("Name of requesting client: %s", self->name);
+
+					infoPrint("Body: %s", body);
+					int bodyLength = strlen(body);
+					sendSuccessResponse(sd, bodyLength, "text/plain", body, self);
+					break;
+				
 				}
 				else
 				{
@@ -341,7 +374,8 @@ static int sendSuccessResponse(int socket, long int sizeOfBody, char *contentTyp
 		strncpy(resp->contentType, contentType, strlen(contentType));
 		resp->contentType[strlen(contentType)] = 0;
 
-		resp->Body = body;
+		memmove(resp->Body, body, sizeOfBody);
+		//resp->Body = body;
 	} 
 
 	// TODO: Set-Cookie...
@@ -470,5 +504,57 @@ static int copyFile(char *dest, char *fileName, long int bufferSize)
 
 
 	return 0;
+
+} 
+
+
+
+
+static long int createMixedResponse(char *strBuf, long int sizeOfStrBuf, char *text, char *boundary)
+{
+
+	strcat(strBuf, boundary);
+	strcat(strBuf, "\r\n");
+	strcat(strBuf, 'Content-Disposition: form-data; name="Description_Text"\r\n');
+
+	strcat(strBuf, text);
+
+	strcat(strBuf, boundary);
+	strcat(strBuf, "\r\n");
+
+	char temp1[100];
+	strcpy(temp1, (char *)'Content-Disposition: form-data; name= "Picture1"; filename="pic.webp"\r\n'); 
+	strcat(strBuf, temp1);
+
+	strcat(strBuf, "Content-Type: image/webp");
+
+
+	//...
+	long int sizeOfFile = findSize("assets/H_Gebaeude.webp");
+	if(sizeOfFile <= 0)
+	{
+		return -1;
+	} 
+
+	infoPrint("Size of file: %ld", sizeOfFile);
+
+	char img[sizeOfFile]; 
+
+	int res = copyFile(img, "assets/H_Gebaeude.webp", sizeOfFile);
+
+	if(res < sizeOfFile)
+	{
+		return -1;
+	} 
+
+	memmove((strBuf + strlen(strBuf)), img, sizeOfFile);
+
+
+
+	strcat(strBuf, boundary);
+
+	infoPrint("Die berechnete Länge von diesem Body ist: %ld", strlen(strBuf));
+
+	infoPrint("Der Body: %s", strBuf);
 
 } 
