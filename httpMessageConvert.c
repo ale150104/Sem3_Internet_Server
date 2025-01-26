@@ -208,9 +208,11 @@ long int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf)
     strcat(strBuf, statusLine);
     strcat(strBuf, headers);
 
+    short BodyAdditionalChars = 0;
     if(buffer->contentLength > 0)
     {
         strcat(strBuf, "\r\n");
+        BodyAdditionalChars = 2;
 
         memmove((strBuf + strlen(strBuf)), buffer->Body, buffer->contentLength);
 
@@ -218,7 +220,7 @@ long int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf)
 
     // infoPrint("Die fertige Nachricht:\n%s", strBuf);
 
-    return strlen(headers) + strlen(statusLine) + buffer->contentLength;   
+    return strlen(headers) + strlen(statusLine) + buffer->contentLength + BodyAdditionalChars;   
     
     //     char body[MSG_MAX - 512 - 1024];
 
