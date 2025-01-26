@@ -6,10 +6,9 @@
 #include <stdio.h>
 
 
-static int getGeneralInfoAboutRequest(HTTPREQUEST *buffer, char *strBuf);
+static void getGeneralInfoAboutRequest(HTTPREQUEST *buffer, char *strBuf);
 
 static int getHeadersFromRequest(HTTPREQUEST *buffer, char *strBuf, int maxHeaders);
-
 
 static char *divideBodyFromHeader(char *str);
 
@@ -22,13 +21,14 @@ static char* buildHeaderLines(HTTPRESPONSE *buffer, char* strBuf);
 int strToHTTP(HTTPREQUEST *buffer, char *strBuf)
 {
 
-    //Returncodes
+    // Getting the Informations in the first Line of an HTTP-Request (Method, URL, HTTP-Version)
     getGeneralInfoAboutRequest(buffer, strBuf);
 
     if(strcmp((buffer->Method), "GET") != 0)
     {
-        infoPrint("Die Nachricht dürfte einen Body haben");
-        //TEMP 
+        // infoPrint("Die Nachricht dürfte einen Body haben");
+        
+        //Because of not being a GET-Request, Probably having a Body, Splitting the Body from the Header by detecting Sequence "\r\n\r\n"  -> First one from last Header. second one as empty line before Body starts    
         char *body = divideBodyFromHeader(strBuf);
         infoPrint("Der angegebene HEADER lautet: %s", strBuf);
         
@@ -37,6 +37,7 @@ int strToHTTP(HTTPREQUEST *buffer, char *strBuf)
         buffer->Body[strlen(body)] = 0;  
     } 
 
+    //After splitting Headers from Body (if necessary), getting Informations about Headers  
     getHeadersFromRequest(buffer, strBuf, 15);
 
     return 0;
@@ -45,37 +46,32 @@ int strToHTTP(HTTPREQUEST *buffer, char *strBuf)
 
 
 
-static int getGeneralInfoAboutRequest(HTTPREQUEST *buffer, char *strBuf) 
+static void getGeneralInfoAboutRequest(HTTPREQUEST *buffer, char *strBuf) 
 {
     char httpStr[MSG_MAX];
 
-    infoPrint("Array Anelgen hat geklappt");
     strcpy(httpStr, strBuf); 
-
-    infoPrint("Kopieren des Strings hat geklappt");
 
     // Get Informations about HTTP-Method, Request-Path & HTTP-Version from first Line
     char *firstLine = strtok(httpStr, "\r\n");
     infoPrint("Die erste Zeile der HTTP-Nachricht: \n  %s", firstLine);
     char *httpVerb = strtok(firstLine, " ");
 
-    infoPrint("Das angegebene HTTP-Verb: %s", httpVerb);
+    //infoPrint("Das angegebene HTTP-Verb: %s", httpVerb);
 
     strncpy(buffer->Method, httpVerb, 4);
     buffer->Method[4] = 0; 
 
 
     char *url = strtok(NULL, " ");
-    infoPrint("Die URL: %s", url);
+    //infoPrint("Die URL: %s", url);
     strncpy(buffer->Url, url, 511);
     buffer->Url[511] = 0; 
 
     char *version = strtok(NULL, " ");
-    infoPrint("Die Version: %s", version);
+    //infoPrint("Die Version: %s", version);
     strncpy(buffer->Version, version, 8);
     buffer->Version[8] = 0; 
-
-    return 0;
 
 }  
 
@@ -89,9 +85,11 @@ static int getHeadersFromRequest(HTTPREQUEST *buffer, char *strBuf, int maxHeade
     char *headerlines[maxHeaders];
 
     strcpy(httpStr, strBuf); 
-    char *firstLine = strtok(httpStr, "\r\n");
-    infoPrint("Die erste Zeile der HTTP-Nachricht: \n  %s", firstLine);
 
+    //Ignore first Line because it is Status Line, not Header Line
+    char *firstLine = strtok(httpStr, "\r\n");
+
+    //Getting each Header-Line by splitting after '\r\n'
     for(int i = 0; i < maxHeaders; i++)
     {
         char *headerLine = strtok(NULL, "\r\n");
@@ -99,9 +97,9 @@ static int getHeadersFromRequest(HTTPREQUEST *buffer, char *strBuf, int maxHeade
         headerlines[i] = headerLine;
     }
 
+    //Detecting Key and Value of Each Header-Line and using the Informations if they Contain important Informations for Program (Headers like Content-Length, Content-Type, Host, Cookie & Connection)
     for(int i = 0; i < maxHeaders; i++)
     {
-        //infoPrint("Die %d. Zeile: %s", i, headerlines[i] );
 
         char *key = strtok(headerlines[i], ":");
 
@@ -111,10 +109,6 @@ static int getHeadersFromRequest(HTTPREQUEST *buffer, char *strBuf, int maxHeade
         } 
 
         char *value = strtok(NULL, "\r\n");
-
-        //infoPrint("Header-Schlüssel: %s", key);
-
-        //infoPrint("Header-Wert: %s", value);
 
         if(compareStrings(key, "Content-Length") == true)
         {
@@ -186,6 +180,7 @@ static char *divideBodyFromHeader(char *str)
 } 
 
 
+//Converting from internal strcuct Response to string in appropriate HTTP-Format 
 long int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf)
 {
     cleanUpArray(strBuf, strlen(strBuf));
@@ -193,6 +188,7 @@ long int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf)
     char statusLine[512];
     cleanUpArray(statusLine, 512); 
 
+    //First Line of HTTP-Response, Status Line
     buildStatusLine(buffer, statusLine);
 
     infoPrint("Die Status-Line für die HTTP-Response: %s", statusLine);
@@ -201,6 +197,7 @@ long int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf)
     char headers[1024];
     cleanUpArray(headers, 1024);
 
+    //Building the Header Lines
     buildHeaderLines(buffer, headers);
 
     infoPrint("Die Header: \n%s", headers);
@@ -209,8 +206,10 @@ long int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf)
     strcat(strBuf, headers);
 
     short BodyAdditionalChars = 0;
+    //If Body is present, Attach Body after Headers
     if(buffer->contentLength > 0)
     {
+        //IMPORTANT: Empty line before starting Body!!
         strcat(strBuf, "\r\n");
         BodyAdditionalChars = 2;
 
@@ -218,11 +217,7 @@ long int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf)
 
     } 
 
-    // infoPrint("Die fertige Nachricht:\n%s", strBuf);
-
     return strlen(headers) + strlen(statusLine) + buffer->contentLength + BodyAdditionalChars;   
-    
-    //     char body[MSG_MAX - 512 - 1024];
 
 } 
 
@@ -280,15 +275,7 @@ static char* buildHeaderLines(HTTPRESPONSE *buffer, char *strBuf)
 
     strcat(strBuf, "\r\n");
 
-    //----------------
-
-        // strcat(strBuf, "Set-Cookie: ");
-
-        // strcat(strBuf, buffer->Cookie);
-
-        // strcat(strBuf, "\r\n");
-
-    // ---------
+    //---------
 
     strcat(strBuf, "Server: ");
 
@@ -320,10 +307,3 @@ static char* buildHeaderLines(HTTPRESPONSE *buffer, char *strBuf)
 
 }
 
-void cleanUpArray(char *strBuf, int length)
-{
-    for(int i = 0; i < length; i++)
-    {
-        *(strBuf + i) = 0;
-    } 
-} 

@@ -9,6 +9,4 @@ int strToHTTP(HTTPREQUEST *buffer, char *strBuf);
 
 long int HTTPTOstr(HTTPRESPONSE *buffer, char *strBuf);
 
-void cleanUpArray(char *strBuf, int length);
-
 #endif
